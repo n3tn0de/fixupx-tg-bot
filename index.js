@@ -12,7 +12,8 @@ const welcome = async (ctx) => {
     `I'm able to delete original messages to keep things clean.`,
     `However, you'll need to grant me 'Delete messages' admin permission` +
     `in your group`,
-    `I'm a bit janky in channels, hopefully dev will fix this in the future`,
+    `I'm a bit janky in channels, hopefully dev will fix this in the future.`,
+    `Source code: https://github.com/n3tn0de/fixupx-tg-bot`
   ].join(`\n`))
 }
 
