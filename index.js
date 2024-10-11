@@ -114,24 +114,29 @@ bot.hears('del', async (ctx) => {
   const { username } = userInfo
   const { id: chatId } = chat
 
-  if (botId === replyUser.id) {
-    const regex = new RegExp(printPostedBy(username))
-    const isFromSameUser = regex.test(text)
-
-    if (!isFromSameUser) {
-      return
-    }
-
+  const justCleanup = async () => {
     try {
-      await telegram.deleteMessage(chatId, replyId)
       await telegram.deleteMessage(chatId, messageId)
     } catch(error) {
       console.error(error)
     }
+  }
+
+  if (botId !== replyUser.id) {
+    justCleanup()
+    return
+  }
+
+  const regex = new RegExp(printPostedBy(username))
+  const isFromSameUser = regex.test(text)
+
+  if (!isFromSameUser) {
+    justCleanup()
     return
   }
 
   try {
+    await telegram.deleteMessage(chatId, replyId)
     await telegram.deleteMessage(chatId, messageId)
   } catch(error) {
     console.error(error)
