@@ -2,7 +2,13 @@ import 'dotenv/config'
 
 import { Telegraf } from 'telegraf'
 
-const bot = new Telegraf(process.env.BOT_TOKEN)
+const { BOT_TOKEN } = process.env
+
+const botId = Number(BOT_TOKEN.split(':')[0])
+
+const bot = new Telegraf(BOT_TOKEN)
+
+const printPostedBy = username => `Link posted by t.me/${username}`
 
 const welcome = async (ctx) => {
   console.log(ctx)
@@ -12,6 +18,7 @@ const welcome = async (ctx) => {
     `I'm able to delete original messages to keep things clean.`,
     `However, you'll need to grant me 'Delete messages' admin permission` +
     `in your group`,
+    `If you want to delete the message I've 'fixed', simply reply 'del' to it.`,
     `I'm a bit janky in channels, hopefully dev will fix this in the future.`,
     `Source code: https://github.com/n3tn0de/fixupx-tg-bot`
   ].join(`\n`))
@@ -36,7 +43,7 @@ bot.hears(twitterUrlRegex, async (ctx) => {
     text,
     reply_to_message,
   } = message
-  console.log(message)
+
   const { username } = userInfo
   const { id: chatId } = chat
   const { groups } = match
@@ -46,7 +53,7 @@ bot.hears(twitterUrlRegex, async (ctx) => {
   }
   const result = [
     `${fixUrl}/${path}`,
-    `Link posted by t.me/${username}`,
+    printPostedBy(username),
     `Original message:`
   ].join(`\n`)
 
@@ -81,6 +88,50 @@ bot.hears(twitterUrlRegex, async (ctx) => {
 
   try {
     await ctx.sendMessage(replyText, replyOptions)
+    await telegram.deleteMessage(chatId, messageId)
+  } catch(error) {
+    console.error(error)
+  }
+})
+
+bot.hears('del', async (ctx) => {
+  const { telegram, update } = ctx
+  const { message } = update
+  const {
+    message_id: messageId,
+    chat,
+    from: userInfo,
+    reply_to_message,
+  } = message
+  if (!reply_to_message) {
+    return
+  }
+  const {
+    from: replyUser,
+    message_id: replyId,
+    text,
+  } = reply_to_message
+  const { username } = userInfo
+  const { id: chatId } = chat
+
+  if (botId === replyUser.id) {
+    const regex = new RegExp(printPostedBy(username))
+    const isFromSameUser = regex.test(text)
+
+    if (!isFromSameUser) {
+      return
+    }
+
+    try {
+      await telegram.deleteMessage(chatId, replyId)
+      await telegram.deleteMessage(chatId, messageId)
+    } catch(error) {
+      console.error(error)
+    }
+    return
+  }
+
+  try {
     await telegram.deleteMessage(chatId, messageId)
   } catch(error) {
     console.error(error)
